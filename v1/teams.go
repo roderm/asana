@@ -18,7 +18,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"net/http"
 	"strings"
 
@@ -29,7 +28,11 @@ type teamCRUDData struct {
 	UserID UserID `json:"user"`
 }
 
-type Team NamedAndIDdEntity
+type Team struct {
+	Name string `json:"name"`
+	ID   string `json:"gid"`
+	Type string `json:"resource_type"`
+}
 
 type TeamRequest struct {
 	// TeamID is a globally unique identifier for the team.
@@ -182,7 +185,6 @@ func (c *Client) pageForTeams(path string) (pagesChan chan *TeamPage, cancelChan
 
 		for {
 			fullURL := fmt.Sprintf("%s%s", baseURL, path)
-			log.Printf("fullURL: %q\n", fullURL)
 			req, _ := http.NewRequest("GET", fullURL, nil)
 			slurp, _, err := c.doAuthReqThenSlurpBody(req)
 			if err != nil {
