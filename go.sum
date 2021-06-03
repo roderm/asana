@@ -1,0 +1,4 @@
+github.com/odeke-em/go-uuid v0.0.0-20151221120446-b211d769a9aa h1:XEhClAZN5U0GUTFRgRdPNgAKO4mP++S+zbqXH+Pr9nU=
+github.com/odeke-em/go-uuid v0.0.0-20151221120446-b211d769a9aa/go.mod h1:omlfAqAAOXYL53jxw8wG+G2xH7NqbkJPlDeGP9YpP6g=
+github.com/orijtech/otils v0.0.1 h1:diO7BhTy7e4TtVWaYNb+veBL4hv2nPxhPm0UZz/qSFQ=
+github.com/orijtech/otils v0.0.1/go.mod h1:DJ39VMSsRLbNibTWiOjpaVT+7hNdKgz6WcFugv1ZxfA=

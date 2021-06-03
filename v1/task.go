@@ -29,7 +29,8 @@ import (
 )
 
 type Task struct {
-	ID          int64              `json:"id,omitempty"`
+	NamedAndIDdEntity
+	// ID          int64              `json:"id,omitempty"`
 	Assignee    *NamedAndIDdEntity `json:"assignee,omitempty"`
 	CreatedAt   *time.Time         `json:"created_at,omitempty"`
 	Completed   bool               `json:"completed,omitempty"`
@@ -51,7 +52,7 @@ type Task struct {
 	HeartCount  int64                `json:"num_hearts,omitempty"`
 	ModifiedAt  *time.Time           `json:"modified_at"`
 
-	Name string `json:"name,omitempty"`
+	// Name string `json:"name,omitempty"`
 
 	Notes string `json:"notes,omitempty"`
 
@@ -67,7 +68,7 @@ type Task struct {
 
 type NamedAndIDdEntity struct {
 	Name string `json:"name"`
-	ID   int64  `json:"id"`
+	ID   string `json:"gid"`
 }
 
 type Membership struct {
@@ -100,7 +101,7 @@ func (as AssigneeStatus) MarshalJSON() ([]byte, error) {
 	return json.Marshal(string(as))
 }
 
-type CustomField map[string]interface{}
+// type CustomField map[string]interface{}
 
 type Metadata map[string]interface{}
 
@@ -330,8 +331,6 @@ type pageToken struct {
 	Path   string `json:"path"`
 	URI    string `json:"uri"`
 }
-
-type Workspace NamedAndIDdEntity
 
 func (c *Client) ListMyWorkspaces() (chan *WorkspacePage, error) {
 	wspChan := make(chan *WorkspacePage)

@@ -73,8 +73,9 @@ type ProjectRequest struct {
 }
 
 type Project struct {
-	ID       int64  `json:"id,omitempty"`
-	Name     string `json:"name,omitempty"`
+	NamedAndIDdEntity
+	// ID       int64  `json:"id,omitempty"`
+	// Name     string `json:"name,omitempty"`
 	Notes    string `json:"notes,omitempty"`
 	Color    string `json:"color,omitempty"`
 	Archived bool   `json:"archived,omitempty"`

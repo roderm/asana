@@ -83,7 +83,11 @@ func (c *Client) httpClient() *http.Client {
 }
 
 type User struct {
-	UID UserID `json:"user"`
+	UID   UserID `json:"user"`
+	ID    string `json:"gid"`
+	Type  string `json:"resource_type"`
+	Name  string `json:"name"`
+	EMail string `json:"email"`
 }
 
 type UserID string

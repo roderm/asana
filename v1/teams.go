@@ -29,9 +29,12 @@ type teamCRUDData struct {
 }
 
 type Team struct {
-	Name string `json:"name"`
-	ID   string `json:"gid"`
-	Type string `json:"resource_type"`
+	NamedAndIDdEntity
+	Type            string `json:"resource_type"`
+	Description     string `json:"description"`
+	HTMLDescription []byte `json:"html_description"`
+	PermalinkURL    string `json:"permalink_url"`
+	// Organisation    *Organisation `json:"organisation"`
 }
 
 type TeamRequest struct {
