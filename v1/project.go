@@ -289,3 +289,31 @@ func (c *Client) TasksForProject(projectID string) (resultsChan chan *TaskResult
 	startPath := fmt.Sprintf("/projects/%s/tasks", projectID)
 	return c.doTasksPaging(startPath)
 }
+
+func (c *Client) ProjectAddCustomField(projectID string, customFieldID string) error {
+	type addProjectCustomField struct {
+		CustomFieldID string `json:"custom_field"`
+	}
+	projectID = strings.TrimSpace(projectID)
+	if projectID == "" {
+		return errEmptyProjectID
+	}
+	customFieldID = strings.TrimSpace(customFieldID)
+	if customFieldID == "" {
+		return errEmptyCustomFieldID
+	}
+	fullURL := fmt.Sprintf("%s/projects/%s/addCustomFieldSetting", baseURL, projectID)
+	qs, err := otils.ToURLValues(&addProjectCustomField{
+		CustomFieldID: customFieldID,
+	})
+	if err != nil {
+		return err
+	}
+	queryStr := qs.Encode()
+	req, err := http.NewRequest("POST", fullURL, strings.NewReader(queryStr))
+	if err != nil {
+		return err
+	}
+	_, _, err = c.doAuthReqThenSlurpBody(req)
+	return err
+}
