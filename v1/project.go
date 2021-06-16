@@ -74,7 +74,7 @@ type ProjectRequest struct {
 
 type Project struct {
 	NamedAndIDdEntity
-	// ID       int64  `json:"id,omitempty"`
+	// AsanaID int64 `json:"id,omitempty"`
 	// Name     string `json:"name,omitempty"`
 	Notes    string `json:"notes,omitempty"`
 	Color    string `json:"color,omitempty"`
@@ -86,8 +86,10 @@ type Project struct {
 
 	Workspace *NamedAndIDdEntity `json:"workspace,omitempty"`
 
-	Members   []*NamedAndIDdEntity `json:"members,omitempty"`
-	Followers []*NamedAndIDdEntity `json:"followers,omitempty"`
+	Members             []*NamedAndIDdEntity  `json:"members,omitempty"`
+	Followers           []*NamedAndIDdEntity  `json:"followers,omitempty"`
+	CustomFields        []CustomField         `json:"custom_fields"`
+	CustomFieldSettings []CustomFieldSettings `json:"custom_field_settings"`
 }
 
 var (
@@ -241,6 +243,9 @@ func (c *Client) QueryForProjects(pq *ProjectQuery) (pagesChan chan *ProjectsPag
 		return nil, nil, errNilProjectQuery
 	}
 	qs, err := otils.ToURLValues(pq)
+	fields := []string{
+		// TODO: add fields to query
+	}
 	if err != nil {
 		return nil, nil, err
 	}
@@ -250,7 +255,9 @@ func (c *Client) QueryForProjects(pq *ProjectQuery) (pagesChan chan *ProjectsPag
 
 	go func() {
 		defer close(pagesChan)
-
+		if len(fields) > 0 {
+			qs.Add("opt_fields", fmt.Sprintf("this.%s", strings.Join(fields[:], ",this.")))
+		}
 		path := fmt.Sprintf("/projects?%s", qs.Encode())
 		for {
 			fullURL := fmt.Sprintf("%s%s", baseURL, path)
