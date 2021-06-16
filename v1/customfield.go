@@ -2,6 +2,7 @@ package asana
 
 import (
 	"encoding/json"
+	"errors"
 	"fmt"
 	"net/http"
 	"strings"
@@ -9,20 +10,30 @@ import (
 	"github.com/orijtech/otils"
 )
 
+var errEmptyCustomFieldID = errors.New("expecting a non-empty custom_field")
+
 type CustomField struct {
 	NamedAndIDdEntity
-	CurrencyCode         string `json:"currency_code,omitempty"`
-	CustomeLabel         string `json:"custom_label,omitempty"`
-	CustomeLabelPosition string `json:"custom_label_position,omitempty"`
-	Description          string `json:"description,omitempty"`
-	Enabled              bool   `json:"enabled,omitempty"`
-	NumberValue          int    `json:"number_value,omitempty"`
+	CurrencyCode        string  `json:"currency_code,omitempty"`
+	CustomLabel         string  `json:"custom_label,omitempty"`
+	CustomLabelPosition string  `json:"custom_label_position,omitempty"`
+	Description         string  `json:"description,omitempty"`
+	Enabled             *bool   `json:"enabled,omitempty"`
+	NumberValue         float32 `json:"number_value,omitempty"`
 
 	Type        string `json:"resource_subtype,omitempty"`
 	WorkspaceID string `json:"workspace,omitempty"`
 	// enum_options
 	// format
 	// has_notifications_enabled
+}
+
+type CustomFieldSettings struct {
+	ID           string             `json:"gid"`
+	CustomField  *CustomField       `json:"custom_field"`
+	ResourceType string             `json:"resource_type"`
+	Important    bool               `json:"is_important"`
+	Parent       *NamedAndIDdEntity `json:"parent"`
 }
 
 type CustomFieldsPage struct {
@@ -37,7 +48,16 @@ type customFieldsPager struct {
 }
 
 type CreateCustomFieldRequest struct {
-	CustomField
+	Name                string `json:"name,omitempty"`
+	CurrencyCode        string `json:"currency_code,omitempty"`
+	CustomLabel         string `json:"custom_label,omitempty"`
+	CustomLabelPosition string `json:"custom_label_position,omitempty"`
+	Description         string `json:"description,omitempty"`
+	Enabled             bool   `json:"enabled,omitempty"`
+	NumberValue         int    `json:"number_value,omitempty"`
+
+	Type        string `json:"resource_subtype,omitempty"`
+	WorkspaceID string `json:"workspace,omitempty"`
 }
 
 type customFieldResultWrap struct {
