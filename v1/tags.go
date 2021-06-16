@@ -125,3 +125,14 @@ func (c *Client) pageForTags(path string) (pagesChan chan *TagsPage, cancelChan 
 	return pagesChan, cancelChan, nil
 
 }
+
+func (c *Client) DeleteTag(tagID string) error {
+	tagID = strings.TrimSpace(tagID)
+	if tagID == "" {
+		return errEmptyTaskID
+	}
+	fullURL := fmt.Sprintf("%s/tags/%s", baseURL, tagID)
+	req, _ := http.NewRequest("DELETE", fullURL, nil)
+	_, _, err := c.doAuthReqThenSlurpBody(req)
+	return err
+}
