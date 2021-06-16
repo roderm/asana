@@ -198,23 +198,21 @@ type taskResultWrap struct {
 }
 
 func (c *Client) CreateTask(t *TaskRequest) (*Task, error) {
-	// This endpoint takes in url-encoded data
-	qs, err := otils.ToURLValues(t)
-	if err != nil {
-		return nil, err
+	type myTaskRequest struct {
+		Data *TaskRequest `json:"data"`
 	}
-
-	for _, field := range readOnlyFields {
-		qs.Del(field)
-	}
-
+	t.HeartCount = nil
+	queryStr, err := json.Marshal(&myTaskRequest{
+		Data: t,
+	})
 	fullURL := fmt.Sprintf("%s/tasks", baseURL)
-	queryStr := qs.Encode()
-	req, err := http.NewRequest("POST", fullURL, strings.NewReader(queryStr))
+	reqBody := string(queryStr)
+	fmt.Println(reqBody)
+	req, err := http.NewRequest("POST", fullURL, strings.NewReader(reqBody))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 	slurp, _, err := c.doAuthReqThenSlurpBody(req)
 	if err != nil {
 		return nil, err
@@ -245,7 +243,7 @@ type TaskRequest struct {
 	Page        int        `json:"page,omitempty"`
 	Limit       int        `json:"limit,omitempty"`
 	MaxRetries  int        `json:"max_retries,omitempty"`
-	Assignee    string     `json:"assignee"`
+	Assignee    string     `json:"assignee,omitempty"`
 	ProjectID   string     `json:"project,omitempty"`
 	Workspace   string     `json:"workspace,omitempty"`
 	ID          int64      `json:"id,omitempty"`
@@ -255,7 +253,7 @@ type TaskRequest struct {
 
 	AssigneeStatus AssigneeStatus `json:"assignee_status,omitempty"`
 
-	CustomFields []CustomField `json:"custom_fields,omitempty"`
+	CustomFields map[string]interface{} `json:"custom_fields,omitempty"`
 
 	DueOn *YYYYMMDD  `json:"due_on,omitempty"`
 	DueAt *time.Time `json:"due_at,omitempty"`
@@ -266,19 +264,19 @@ type TaskRequest struct {
 
 	HeartedByMe bool       `json:"hearted,omitempty"`
 	Hearts      []*User    `json:"hearts,omitempty"`
-	HeartCount  int64      `json:"num_hearts,omitempty"`
-	ModifiedAt  *time.Time `json:"modified_at"`
+	HeartCount  *int64     `json:"num_hearts,omitempty"`
+	ModifiedAt  *time.Time `json:"modified_at,omitempty"`
 
 	Name string `json:"name,omitempty"`
 
 	Notes string `json:"notes,omitempty"`
 
-	Projects   []*NamedAndIDdEntity `json:"projects,omitempty"`
-	ParentTask *Task                `json:"parent,omitempty"`
+	Projects   []string `json:"projects,omitempty"`
+	ParentTask string   `json:"parent,omitempty"`
 
 	Memberships []*Membership `json:"memberships,omitempty"`
 
-	Tags []*NamedAndIDdEntity `json:"tags,omitempty"`
+	Tags []string `json:"tags,omitempty"`
 }
 
 type listTaskWrap struct {
