@@ -431,6 +431,72 @@ func (c *Client) doTasksPaging(path string) (resultsChan chan *TaskResultPage, c
 	return tasksPageChan, cancelChan, nil
 }
 
+type SearchRequest struct {
+	fields map[string]string
+}
+type SearchOpt func(*SearchRequest)
+
+func WithField(key string, value string) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[key] = value
+	}
+}
+
+func WithCustomFieldIsSet(id string, value bool) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.is_set", id)] = fmt.Sprintf("%t", value)
+	}
+}
+func WithCustomFieldValue(id string, value interface{}) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.value", id)] = value.(string)
+	}
+}
+func WithCustomFieldStarts(id string, value string) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.starts_with", id)] = value
+	}
+}
+func WithCustomFieldEnds(id string, value string) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.ends_with", id)] = value
+	}
+}
+
+func WithCustomFieldContains(id string, value string) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.contains", id)] = value
+	}
+}
+
+func WithCustomFieldLess(id string, value float64) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.less_than", id)] = fmt.Sprintf("%f", value)
+	}
+}
+
+func WithCustomFieldGreater(id string, value float64) SearchOpt {
+	return func(sr *SearchRequest) {
+		sr.fields[fmt.Sprintf("custom_fields.%s.greater_than", id)] = fmt.Sprintf("%f", value)
+	}
+}
+
+func (c *Client) SearchTask(workspaceID string, opts ...SearchOpt) (pagesChan chan *TaskResultPage, cancelChan chan<- bool, err error) {
+	sr := &SearchRequest{
+		fields: make(map[string]string),
+	}
+	for _, o := range opts {
+		o(sr)
+	}
+	query := make(url.Values)
+	for k, v := range sr.fields {
+		query.Add(k, v)
+	}
+	path := fmt.Sprintf("/workspaces/%s/tasks/search?%s", workspaceID, query.Encode())
+	fmt.Println("Path:", path)
+	return c.doTasksPaging(path)
+}
+
 func (c *Client) DeleteTask(taskID string) error {
 	taskID = strings.TrimSpace(taskID)
 	if taskID == "" {
