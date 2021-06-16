@@ -20,6 +20,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"net/url"
 	"strconv"
 	"strings"
 	"sync"
@@ -45,7 +46,7 @@ type Task struct {
 
 	Metadata Metadata `json:"external,omitempty"`
 
-	Followers []*NamedAndIDdEntity `json:"followers,omitempty"`
+	Followers []*User `json:"followers,omitempty"`
 
 	HeartedByMe bool                 `json:"hearted,omitempty"`
 	Hearts      []*NamedAndIDdEntity `json:"hearts,omitempty"`
@@ -63,7 +64,7 @@ type Task struct {
 
 	Memberships []*Membership `json:"memberships,omitempty"`
 
-	Tags []*NamedAndIDdEntity `json:"tags,omitempty"`
+	Tags []*Tag `json:"tags,omitempty"`
 }
 
 type NamedAndIDdEntity struct {
@@ -393,12 +394,40 @@ func (c *Client) ListTasksForProject(treq *TaskRequest) (resultsChan chan *TaskR
 func (c *Client) doTasksPaging(path string) (resultsChan chan *TaskResultPage, cancelChan chan<- bool, err error) {
 	tasksPageChan := make(chan *TaskResultPage)
 	cancelChan = make(chan bool, 1)
-
+	fields := []string{
+		"name",
+		"assignee",
+		"created_at",
+		"completed",
+		"completed_at",
+		"assignee_status",
+		"custom_fields",
+		"due_on",
+		"due_at",
+		"external",
+		"followers.name",
+		"followers.email",
+		"hearted",
+		"hearts",
+		"num_hearts",
+		"modified_at",
+		"tags.name",
+		"tags.color",
+		"projects.name",
+		"projects.custom_fields",
+	}
 	go func() {
 		defer close(tasksPageChan)
 
 		for {
-			fullURL := fmt.Sprintf("%s%s", baseURL, path)
+			uri, _ := url.Parse(fmt.Sprintf("%s%s", baseURL, path))
+			query := uri.Query()
+			if len(fields) > 0 {
+				query.Add("opt_fields", fmt.Sprintf("this.%s", strings.Join(fields[:], ",this.")))
+			}
+			uri.RawQuery = query.Encode()
+			fullURL := uri.String()
+			fmt.Println("url:", fullURL)
 			req, err := http.NewRequest("GET", fullURL, nil)
 			if err != nil {
 				tasksPageChan <- &TaskResultPage{Err: err}
@@ -406,6 +435,7 @@ func (c *Client) doTasksPaging(path string) (resultsChan chan *TaskResultPage, c
 			}
 
 			slurp, _, err := c.doAuthReqThenSlurpBody(req)
+			fmt.Println(string(slurp))
 			if err != nil {
 				tasksPageChan <- &TaskResultPage{Err: err}
 				return
