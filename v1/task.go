@@ -33,7 +33,7 @@ type Task struct {
 	NamedAndIDdEntity
 	// ID          int64              `json:"id,omitempty"`
 	Assignee    *NamedAndIDdEntity `json:"assignee,omitempty"`
-	CreatedAt   *time.Time         `json:"created_at,omitempty"`
+	CreatedAt   *time.Time         `json:"created_at"`
 	Completed   bool               `json:"completed,omitempty"`
 	CompletedAt *time.Time         `json:"completed_at,omitempty"`
 
@@ -51,7 +51,7 @@ type Task struct {
 	HeartedByMe bool                 `json:"hearted,omitempty"`
 	Hearts      []*NamedAndIDdEntity `json:"hearts,omitempty"`
 	HeartCount  int64                `json:"num_hearts,omitempty"`
-	ModifiedAt  *time.Time           `json:"modified_at"`
+	ModifiedAt  *time.Time           `json:"modified_at,omitempty"`
 
 	// Name string `json:"name,omitempty"`
 
@@ -203,12 +203,13 @@ func (c *Client) CreateTask(t *TaskRequest) (*Task, error) {
 		Data *TaskRequest `json:"data"`
 	}
 	t.HeartCount = nil
+	t.CreatedAt = nil
+	t.ModifiedAt = nil
 	queryStr, err := json.Marshal(&myTaskRequest{
 		Data: t,
 	})
 	fullURL := fmt.Sprintf("%s/tasks", baseURL)
 	reqBody := string(queryStr)
-	fmt.Println(reqBody)
 	req, err := http.NewRequest("POST", fullURL, strings.NewReader(reqBody))
 	if err != nil {
 		return nil, err
@@ -221,6 +222,28 @@ func (c *Client) CreateTask(t *TaskRequest) (*Task, error) {
 	return parseOutTaskFromData(slurp)
 }
 
+func (c *Client) UpdateTask(t *TaskRequest) (*Task, error) {
+	type myTaskRequest struct {
+		Data *TaskRequest `json:"data"`
+	}
+	t.HeartCount = nil
+	t.CreatedAt = nil
+	queryStr, err := json.Marshal(&myTaskRequest{
+		Data: t,
+	})
+	fullURL := fmt.Sprintf("%s/tasks/%s", baseURL, t.ID)
+	reqBody := string(queryStr)
+	req, err := http.NewRequest("PUT", fullURL, strings.NewReader(reqBody))
+	if err != nil {
+		return nil, err
+	}
+	req.Header.Set("Content-Type", "application/json")
+	slurp, _, err := c.doAuthReqThenSlurpBody(req)
+	if err != nil {
+		return nil, err
+	}
+	return parseOutTaskFromData(slurp)
+}
 func parseOutTaskFromData(blob []byte) (*Task, error) {
 	wrap := new(taskResultWrap)
 	if err := json.Unmarshal(blob, wrap); err != nil {
@@ -241,13 +264,14 @@ type taskPager struct {
 }
 
 type TaskRequest struct {
+	Name        string     `json:"name,omitempty"`
+	ID          string     `json:"gid,omitempty"`
 	Page        int        `json:"page,omitempty"`
 	Limit       int        `json:"limit,omitempty"`
 	MaxRetries  int        `json:"max_retries,omitempty"`
 	Assignee    string     `json:"assignee,omitempty"`
 	ProjectID   string     `json:"project,omitempty"`
 	Workspace   string     `json:"workspace,omitempty"`
-	ID          int64      `json:"id,omitempty"`
 	CreatedAt   *time.Time `json:"created_at,omitempty"`
 	Completed   bool       `json:"completed,omitempty"`
 	CompletedAt *time.Time `json:"completed_at,omitempty"`
@@ -268,9 +292,8 @@ type TaskRequest struct {
 	HeartCount  *int64     `json:"num_hearts,omitempty"`
 	ModifiedAt  *time.Time `json:"modified_at,omitempty"`
 
-	Name string `json:"name,omitempty"`
-
-	Notes string `json:"notes,omitempty"`
+	Notes     string `json:"notes,omitempty"`
+	NotesHTML string `json:"html_notes,omitempty"`
 
 	Projects   []string `json:"projects,omitempty"`
 	ParentTask string   `json:"parent,omitempty"`

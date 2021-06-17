@@ -81,8 +81,8 @@ type Project struct {
 	Archived bool   `json:"archived,omitempty"`
 
 	Owner      *NamedAndIDdEntity `json:"owner,omitempty"`
-	CreatedAt  *time.Time         `json:"created_at,omitempty"`
-	ModifiedAt *time.Time         `json:"created_at,omitempty"`
+	CreatedAt  *time.Time         `json:"created_at"`
+	ModifiedAt *time.Time         `json:"modified_at"`
 
 	Workspace *NamedAndIDdEntity `json:"workspace,omitempty"`
 

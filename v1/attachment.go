@@ -22,6 +22,8 @@ import (
 	"io"
 	"mime/multipart"
 	"net/http"
+	"net/textproto"
+	"net/url"
 	"strings"
 
 	"github.com/orijtech/otils"
@@ -32,7 +34,7 @@ import (
 type Attachment struct {
 	ID int64 `json:"id,omitempty"`
 
-	CreatedAt   *otils.NullableTime  `json:"created_at,omitempty"`
+	CreatedAt   *otils.NullableTime  `json:"created_at"`
 	DownloadURL otils.NullableString `json:"download_url"`
 
 	// Host is a read-only value.
@@ -108,45 +110,107 @@ func (au *AttachmentUpload) Validate() error {
 	return nil
 }
 
+var quoteEscaper = strings.NewReplacer("\\", "\\\\", `"`, "\\\"")
+
+func escapeQuotes(s string) string {
+	return quoteEscaper.Replace(s)
+}
+
 // UploadAtatchment uploads an attachment to a specific task.
 // Its fields: TaskID and Body must be set otherwise it will return an error.
 func (c *Client) UploadAttachment(au *AttachmentUpload) (*Attachment, error) {
-	if err := au.Validate(); err != nil {
+	contentType, _, err := fDetectContentType(au.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	body := &bytes.Buffer{}
+
+	writer := multipart.NewWriter(body)
+
+	h := make(textproto.MIMEHeader)
+	h.Set("Content-Disposition",
+		fmt.Sprintf(`form-data; name="file"; type="%s"; filename="%s"`,
+			escapeQuotes(contentType), escapeQuotes(au.nonBlankFilename())))
+	h.Set("Content-Type", contentType)
+	fw, err := writer.CreatePart(h)
+	if err != nil {
+		return nil, err
+	}
+	_, err = io.Copy(fw, au.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	err = writer.WriteField("type", contentType)
+	if err != nil {
+		return nil, err
+	}
+
+	err = writer.Close()
+	if err != nil {
+		return nil, err
+	}
+
+	/* if err := au.Validate(); err != nil {
 		return nil, err
 	}
 
 	// Step 1. Try to determine the contentType.
-	contentType, body, err := fDetectContentType(au.Body)
-	if err != nil {
-		return nil, err
-	}
-
 	// Step 2:
 	// Initiate and then make the upload.
-	prc, pwc := io.Pipe()
-	mpartW := multipart.NewWriter(pwc)
-	go func() {
-		defer func() {
-			_ = mpartW.Close()
-			_ = pwc.Close()
-		}()
+	// prc, pwc := io.Pipe()
+	var b bytes.Buffer
+	mpartW := multipart.NewWriter(&b)
+	// go func() {
+	// 	defer func() {
+	// 		_ = mpartW.Close()
+	// 		_ = pwc.Close()
+	// 	}()
 
-		formFile, err := mpartW.CreateFormFile("file", au.nonBlankFilename())
-		if err != nil {
-			return
+	// 	formFile, err := mpartW.CreateFormFile("file", au.nonBlankFilename())
+	// 	if err != nil {
+	// 		return
+	// 	}
+	// 	writeStringField(mpartW, "Type", contentType)
+	// 	// writeStringField(mpartW, "name", au.Name)
+	// 	_, _ = io.Copy(formFile, body)
+
+	// }()
+	var fw io.Writer
+	if x, ok := body.(io.Closer); ok {
+		defer x.Close()
+	}
+	writeStringField(mpartW, "Type", contentType)
+	// Add an image file
+	if x, ok := body.(*os.File); ok {
+		if fw, err = mpartW.CreateFormFile("file", x.Name()); err != nil {
+			return nil, err
 		}
-		_, _ = io.Copy(formFile, body)
-
-		writeStringField(mpartW, "Content-Type", contentType)
-		writeStringField(mpartW, "name", au.Name)
-	}()
-
-	fullURL := fmt.Sprintf("%s/tasks/%s/attachments", baseURL, au.TaskID)
-	req, err := http.NewRequest("POST", fullURL, prc)
+	} else {
+		// Add other fields
+		if fw, err = mpartW.CreateFormField("file"); err != nil {
+			return nil, err
+		}
+	}
+	if _, err = io.Copy(fw, body); err != nil {
+		return nil, err
+	}
+	*/
+	fullURL, err := url.Parse(fmt.Sprintf("%s/tasks/%s/attachments", baseURL, au.TaskID))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", mpartW.FormDataContentType())
+	query := fullURL.Query()
+	query.Add("opt_fields", "this.name,this.view_url")
+	fullURL.RawQuery = query.Encode()
+	req, err := http.NewRequest("POST", fullURL.String(), bytes.NewReader(body.Bytes()))
+	if err != nil {
+		return nil, err
+	}
+
+	req.Header.Set("Content-Type", writer.FormDataContentType())
+	// req.Header.Set("Content-Type", "multipart/form-data")
 	slurp, _, err := c.doAuthReqThenSlurpBody(req)
 	if err != nil {
 		return nil, err

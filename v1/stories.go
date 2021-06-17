@@ -5,8 +5,6 @@ import (
 	"fmt"
 	"net/http"
 	"strings"
-
-	"github.com/orijtech/otils"
 )
 
 type Story struct {
@@ -28,22 +26,21 @@ type CreateStoryRequest struct {
 
 func (c *Client) CreateStory(s *CreateStoryRequest) (*Story, error) {
 	// This endpoint takes in url-encoded data
-	qs, err := otils.ToURLValues(s)
-	if err != nil {
-		return nil, err
+	type myCreateStoryRequest struct {
+		Data *CreateStoryRequest `json:"data"`
 	}
 
-	for _, field := range readOnlyFields {
-		qs.Del(field)
-	}
+	queryStr, err := json.Marshal(&myCreateStoryRequest{
+		Data: s,
+	})
 
 	fullURL := fmt.Sprintf("%s/tasks/%s/stories", baseURL, s.TaskID)
-	queryStr := qs.Encode()
-	req, err := http.NewRequest("POST", fullURL, strings.NewReader(queryStr))
+	reqBody := string(queryStr)
+	req, err := http.NewRequest("POST", fullURL, strings.NewReader(reqBody))
 	if err != nil {
 		return nil, err
 	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+	req.Header.Set("Content-Type", "application/json")
 	slurp, _, err := c.doAuthReqThenSlurpBody(req)
 	if err != nil {
 		return nil, err
